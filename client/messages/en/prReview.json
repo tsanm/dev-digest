@@ -92,6 +92,7 @@
       "author": "Author",
       "size": "Size",
       "score": "Score",
+      "findings": "Findings",
       "status": "Status",
       "updated": "Updated"
     },

@@ -25,5 +25,6 @@ surprised you, so the next session doesn't relearn it. **Append-only** — see t
 ### 2026-07-03
 - Built the HW-1 feature: per-run **severity counter + click-to-filter** in `FindingsPanel` (`SeverityCounts.tsx` chips + `severity` state + `severityCounts()`), reusing `SEV_COLOR` and the existing `hideLow` seam. Client-only, no server/contract change, zero new LLM calls.
 - Decision: counter tallies over the hide-low-filtered set; filter composes (AND) with `hideLow`; zero-count chips render but are disabled; clicking the active chip clears.
+- Added the visible surfaces: PR-list **FINDINGS column** (`PRRow` severity chips fed by 3 new `PrMeta` count fields; server wires the unused `rollupSeverities` in `pulls/routes.ts`) and a per-run **hovercard** in `ReviewRunAccordion` (`RunFindingsHover`, portaled to `<body>` to escape the accordion's `overflow:hidden`). Reviewed PRs show all 3 severities incl. dimmed `0`s; only never-reviewed PRs show `—`.
 
 ## Open Questions

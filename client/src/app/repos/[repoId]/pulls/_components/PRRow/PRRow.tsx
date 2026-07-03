@@ -5,8 +5,9 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Icon, Avatar, Badge, CircularScore } from "@devdigest/ui";
+import { SEV } from "@/vendor/ui/primitives/tokens";
 import type { PrMeta } from "@/lib/types";
-import { SIZE_COLOR, STATUS_META } from "../../constants";
+import { SIZE_COLOR, STATUS_META, FINDINGS_FIELDS } from "../../constants";
 import { relativeTime, sizeOf } from "../../helpers";
 import { s } from "../../styles";
 
@@ -51,6 +52,30 @@ export function PRRow({ pr, repoId }: { pr: PrMeta; repoId: string }) {
           <CircularScore score={pr.score!} size={34} stroke={3} />
         ) : (
           <span style={s.muted}>—</span>
+        )}
+      </div>
+      <div style={s.findingsCell}>
+        {!reviewed ? (
+          // Never reviewed → nothing to count. A reviewed PR always shows all
+          // three severities (zeros dimmed) so "0 findings" reads clearly.
+          <span style={s.muted}>—</span>
+        ) : (
+          FINDINGS_FIELDS.map(({ sev, field }) => {
+            const n = pr[field] ?? 0;
+            const meta = SEV[sev];
+            const SIcon = Icon[meta.icon];
+            return (
+              <span
+                key={sev}
+                aria-label={`${meta.label}: ${n}`}
+                className="tnum"
+                style={s.findingChip(n > 0 ? meta.c : "var(--text-muted)")}
+              >
+                <SIcon size={13} />
+                {n}
+              </span>
+            );
+          })
         )}
       </div>
       <div>

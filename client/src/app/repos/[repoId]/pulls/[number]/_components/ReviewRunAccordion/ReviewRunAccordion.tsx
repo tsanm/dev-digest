@@ -9,6 +9,7 @@ import React from "react";
 import { Icon, Badge } from "@devdigest/ui";
 import type { ReviewRecord, Verdict } from "@devdigest/shared";
 import { FindingsPanel } from "../FindingsPanel";
+import { RunFindingsHover } from "./RunFindingsHover";
 import { VerdictBanner } from "../VerdictBanner";
 import { useDeleteReview } from "../../../../../../../lib/hooks/reviews";
 
@@ -93,9 +94,13 @@ export function ReviewRunAccordion({
             {review.verdict.replace("_", " ")}
           </Badge>
         )}
-        <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-          {findings.length} finding{findings.length === 1 ? "" : "s"}
-          {blockers > 0 ? ` · ${blockers} blocker${blockers === 1 ? "" : "s"}` : ""}
+        <span onClick={(e) => e.stopPropagation()} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <RunFindingsHover findings={findings} repoFullName={repoFullName} headSha={headSha} />
+          {blockers > 0 && (
+            <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+              · {blockers} blocker{blockers === 1 ? "" : "s"}
+            </span>
+          )}
         </span>
         <span style={{ flex: 1 }} />
         {review.score != null && (

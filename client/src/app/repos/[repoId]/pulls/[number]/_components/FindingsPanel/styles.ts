@@ -9,12 +9,6 @@ export const s = {
     marginBottom: 16,
     flexWrap: "wrap",
   } satisfies CSSProperties,
-  divider: {
-    width: 1,
-    height: 18,
-    background: "var(--border)",
-    margin: "0 2px",
-  } satisfies CSSProperties,
   toggleGroup: {
     marginLeft: "auto",
     display: "flex",
@@ -24,4 +18,18 @@ export const s = {
     color: "var(--text-secondary)",
   } satisfies CSSProperties,
   list: { display: "flex", flexDirection: "column", gap: 12 } satisfies CSSProperties,
+  counts: { display: "flex", alignItems: "center", gap: 6 } satisfies CSSProperties,
+  chip: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    padding: "3px 9px",
+    borderRadius: 999,
+    border: "1px solid var(--border)",
+    background: "transparent",
+    color: "var(--text-secondary)",
+    fontSize: 12,
+    lineHeight: 1,
+    cursor: "pointer",
+  } satisfies CSSProperties,
 } as const;

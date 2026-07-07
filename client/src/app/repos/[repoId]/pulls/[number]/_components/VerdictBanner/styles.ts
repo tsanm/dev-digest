@@ -28,11 +28,42 @@ export const s = {
     gap: 12,
     flexWrap: "wrap",
   } satisfies CSSProperties,
+  // Agent name = the hero of the banner.
+  agentTitle: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    fontSize: 19,
+    fontWeight: 700,
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
+  // Verdict is now a small supporting pill, not the headline.
+  verdictPill: (color: string): CSSProperties => ({
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.04em",
+    textTransform: "uppercase",
+    padding: "2px 8px",
+    borderRadius: 999,
+    color,
+    background: "color-mix(in srgb, currentColor 14%, transparent)",
+  }),
+  // Findings line — prominent, second only to the agent name.
+  findingsLine: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 6,
+    fontSize: 15,
+    fontWeight: 600,
+    color: "var(--text-primary)",
+  } satisfies CSSProperties,
+  blockerCount: { color: "var(--crit)", fontWeight: 700 } satisfies CSSProperties,
   label: (color: string): CSSProperties => ({ fontSize: 18, fontWeight: 700, color }),
   summary: {
-    fontSize: 14,
+    fontSize: 13.5,
     lineHeight: 1.55,
-    color: "var(--text-secondary)",
+    color: "var(--text-muted)",
     marginTop: 8,
   } satisfies CSSProperties,
   scoreCol: {

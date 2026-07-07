@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import https from 'node:https';
 import type {
   LLMProvider,
   ModelInfo,
@@ -23,6 +24,58 @@ import { toJsonSchema, parseWithRepair } from './structured.js';
  */
 
 const NOT_SUPPORTED = 'OpenRouterProvider only implements completeStructured';
+
+/**
+ * OpenRouter transport over `node:https`. Node's bundled `undici` fetch aborts
+ * OpenRouter's slower structured responses with "Premature close" (reproducible
+ * on Node 26, ~3.8s in) while `node:https` completes the same requests reliably.
+ * `completeStructured` is non-streaming, so a plain request→buffer→Response
+ * wrapper is sufficient; the OpenAI SDK consumes the returned `Response` as usual.
+ */
+const nodeHttpsFetch: typeof fetch = (input, init = {}) => {
+  const url = new URL(input instanceof Request ? input.url : input.toString());
+  const headers: Record<string, string> = {};
+  const h = init.headers;
+  if (h instanceof Headers) h.forEach((v, k) => (headers[k] = v));
+  else if (Array.isArray(h)) for (const [k, v] of h) { if (k) headers[k] = v ?? ''; }
+  else if (h) Object.assign(headers, h);
+  headers['accept-encoding'] = 'identity'; // skip content-encoding bookkeeping
+  const body = typeof init.body === 'string' ? init.body : undefined;
+  if (body != null) headers['content-length'] = String(Buffer.byteLength(body));
+  return new Promise<Response>((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: url.hostname,
+        port: url.port || 443,
+        path: url.pathname + url.search,
+        method: init.method ?? 'GET',
+        headers,
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => chunks.push(c));
+        res.on('end', () => {
+          const out: [string, string][] = [];
+          for (const [k, v] of Object.entries(res.headers)) {
+            if (Array.isArray(v)) out.push([k, v.join(', ')]);
+            else if (v != null) out.push([k, v]);
+          }
+          resolve(
+            new Response(Buffer.concat(chunks), {
+              status: res.statusCode ?? 502,
+              statusText: res.statusMessage,
+              headers: out,
+            }),
+          );
+        });
+      },
+    );
+    req.on('error', reject);
+    if (init.signal) init.signal.addEventListener('abort', () => req.destroy(new Error('Request aborted')));
+    if (body != null) req.write(body);
+    req.end();
+  });
+};
 
 export interface OpenRouterProviderOptions {
   /** OpenAI-compatible base URL (default: OpenRouter). */
@@ -53,6 +106,7 @@ export class OpenRouterProvider implements LLMProvider {
       baseURL: this.baseURL,
       timeout: opts.timeoutMs ?? 90_000,
       maxRetries: opts.maxRetries ?? 2,
+      fetch: nodeHttpsFetch,
     });
   }
 

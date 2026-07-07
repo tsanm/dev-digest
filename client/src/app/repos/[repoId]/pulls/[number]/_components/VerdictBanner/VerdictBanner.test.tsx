@@ -26,8 +26,11 @@ describe("VerdictBanner (smoke)", () => {
         agentName="Security Reviewer"
       />,
     );
+    // agent name is now the hero; verdict is a supporting pill; findings prominent
+    expect(screen.getByText("Security Reviewer")).toBeInTheDocument();
     expect(screen.getByText("Request changes")).toBeInTheDocument();
     expect(screen.getByText("42")).toBeInTheDocument();
-    expect(screen.getByText(/1 findings · 1 blockers/)).toBeInTheDocument();
+    expect(screen.getByText("1 findings")).toBeInTheDocument();
+    expect(screen.getByText(/1 blockers/)).toBeInTheDocument();
   });
 });

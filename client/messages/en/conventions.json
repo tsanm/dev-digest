@@ -17,10 +17,37 @@
     },
     "candidateCount": "{count, plural, one {# candidate} other {# candidates}} · grounded against sampled files"
   },
+  "toolbar": {
+    "deselectAll": "Deselect all",
+    "acceptedCount": "{count} of {total} accepted",
+    "createSkill": "Create skill"
+  },
   "card": {
     "confidence": "Confidence",
     "accepted": "Accepted",
-    "accepting": "Accepting…",
-    "acceptAsSkill": "Accept as Skill"
+    "accept": "Accept",
+    "reject": "Reject",
+    "editRule": "Edit rule",
+    "copy": "Copy path"
+  },
+  "modal": {
+    "title": "Create skill from conventions",
+    "close": "Close",
+    "banner": "Merged from {count, plural, one {# accepted convention} other {# accepted conventions}} in {repo}. Everything below is editable before you save.",
+    "name": "Name",
+    "description": "Description",
+    "type": "Type",
+    "enabled": "Enabled",
+    "enabledHint": "Whether this block is added to agents' prompts.",
+    "body": "Skill body",
+    "unsaved": "unsaved",
+    "tokens": "{count} tokens",
+    "linkAgent": "Link to agent (optional)",
+    "noAgent": "— Don't link —",
+    "savedHint": "Saved as v1 · added to Skills Lab",
+    "cancel": "Cancel",
+    "create": "Create skill",
+    "creating": "Creating…",
+    "error": "Could not create the skill."
   }
 }

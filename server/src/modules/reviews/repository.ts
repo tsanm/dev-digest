@@ -161,6 +161,10 @@ export class ReviewRepository {
       score?: number | null;
       /** Findings that tripped the agent's gate; 0 on failed/cancelled runs. */
       blockers?: number | null;
+      /** Number of skills injected into the prompt (0 = baseline/no skills). */
+      skillsCount?: number | null;
+      /** Names of the skills injected into the prompt. */
+      skillNames?: string[] | null;
       /** Failure reason (status='failed') / cancellation note. Null clears it. */
       error?: string | null;
     },

@@ -52,29 +52,29 @@ export const FEATURE_MODELS: FeatureModelDef[] = [
     id: 'review_intent',
     label: 'PR Review · Intent',
     description: 'Derives a PR’s intent and scope before review.',
-    defaultProvider: 'openai',
-    defaultModel: 'gpt-4.1',
+    defaultProvider: 'openrouter',
+    defaultModel: 'openai/gpt-4o-mini',
   },
   {
     id: 'risk_brief',
     label: 'Risk Brief',
     description: 'Assesses merge risks for a pull request.',
-    defaultProvider: 'openai',
-    defaultModel: 'gpt-4.1',
+    defaultProvider: 'openrouter',
+    defaultModel: 'openai/gpt-4o-mini',
   },
   {
     id: 'conformance',
     label: 'Conformance',
     description: 'Checks a PR against the project spec.',
-    defaultProvider: 'openai',
-    defaultModel: 'gpt-4.1',
+    defaultProvider: 'openrouter',
+    defaultModel: 'openai/gpt-4o-mini',
   },
   {
     id: 'conventions',
     label: 'Conventions',
     description: 'Extracts coding conventions from the repo.',
-    defaultProvider: 'openai',
-    defaultModel: 'gpt-5.4',
+    defaultProvider: 'openrouter',
+    defaultModel: 'openai/gpt-4o-mini',
   },
 ];
 
@@ -259,6 +259,8 @@ export type IndexStatus = z.infer<typeof IndexStatus>;
 export const RunRequest = z.object({
   agentId: z.string().optional(),
   all: z.boolean().optional(),
+  /** Baseline run: skip injecting the agent's skills (for with/without comparison). */
+  skip_skills: z.boolean().optional(),
 });
 export type RunRequest = z.infer<typeof RunRequest>;
 

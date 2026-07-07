@@ -34,16 +34,15 @@ export function VerdictBanner({
       </div>
       <div style={s.main}>
         <div style={s.titleRow}>
-          <span style={s.label(m.c)}>{t(`verdict.${m.labelKey}`)}</span>
-          <Badge color="var(--text-secondary)">
-            {t("verdict.findingsCount", { count: findingsCount })}
-            {blockers > 0 ? t("verdict.blockers", { count: blockers }) : ""}
-          </Badge>
-          {agentName && (
-            <Badge color="var(--accent-text)" bg="var(--accent-bg)" icon="Cpu">
-              {agentName}
-            </Badge>
-          )}
+          <span style={s.agentTitle}>
+            <Icon.Cpu size={18} style={{ color: "var(--accent-text)" }} />
+            {agentName ?? t("verdict.agentFallback")}
+          </span>
+          <span style={s.verdictPill(m.c)}>{t(`verdict.${m.labelKey}`)}</span>
+        </div>
+        <div style={s.findingsLine}>
+          <span>{t("verdict.findingsCount", { count: findingsCount })}</span>
+          {blockers > 0 && <span style={s.blockerCount}>{t("verdict.blockers", { count: blockers })}</span>}
         </div>
         {summary && <p style={s.summary}>{summary}</p>}
       </div>

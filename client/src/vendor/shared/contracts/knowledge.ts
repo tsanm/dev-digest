@@ -143,13 +143,36 @@ export type CommunitySkill = z.infer<typeof CommunitySkill>;
 // ---- Conventions ----
 export const ConventionCandidate = z.object({
   id: z.string(),
+  category: z.string().nullish(),
   rule: z.string(),
   evidence_path: z.string(),
   evidence_snippet: z.string(),
+  /** 1-based start line of the evidence snippet (for the GitHub link); null if unresolved. */
+  evidence_line: z.number().int().nullish(),
   confidence: z.number().min(0).max(1),
   accepted: z.boolean(),
+  rejected: z.boolean(),
 });
 export type ConventionCandidate = z.infer<typeof ConventionCandidate>;
+
+/** Body for PUT /conventions/:id — edit a candidate's rule / evidence. */
+export const ConventionEdit = z.object({
+  rule: z.string().min(1).optional(),
+  evidence_snippet: z.string().optional(),
+});
+export type ConventionEdit = z.infer<typeof ConventionEdit>;
+
+/** Body for POST /repos/:id/conventions/skill — merge accepted candidates into one skill. */
+export const ConventionSkillRequest = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().optional(),
+  type: SkillType.optional(),
+  body: z.string().optional(),
+  enabled: z.boolean().optional(),
+  /** Optionally link the created skill to an agent. */
+  agent_id: z.string().optional(),
+});
+export type ConventionSkillRequest = z.infer<typeof ConventionSkillRequest>;
 
 // ---- Agents ----
 export const Provider = z.enum(['openai', 'anthropic', 'openrouter']);

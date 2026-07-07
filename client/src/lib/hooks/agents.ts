@@ -3,12 +3,47 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
-import type { Agent, ModelInfo, Provider, ReviewStrategy } from "@devdigest/shared";
+import type { Agent, AgentSkillLink, ModelInfo, Provider, ReviewStrategy } from "@devdigest/shared";
 
 export function useAgents() {
   return useQuery({
     queryKey: ["agents"],
     queryFn: () => api.get<Agent[]>("/agents"),
+  });
+}
+
+/** The ordered skill links for an agent (skill_id + order). */
+export function useAgentSkills(agentId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["agent", agentId, "skills"],
+    queryFn: () => api.get<AgentSkillLink[]>(`/agents/${agentId}/skills`),
+    enabled: !!agentId,
+  });
+}
+
+/** Replace/reorder an agent's linked skills (order = prompt block order).
+ *  Optimistic: the cache is updated to the new set IMMEDIATELY so rapid toggles
+ *  compute from current state (not a stale query) and don't overwrite each other. */
+export function useSetAgentSkills() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ agentId, skillIds }: { agentId: string; skillIds: string[] }) =>
+      api.post<AgentSkillLink[]>(`/agents/${agentId}/skills`, { skill_ids: skillIds }),
+    onMutate: async ({ agentId, skillIds }) => {
+      const key = ["agent", agentId, "skills"];
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<AgentSkillLink[]>(key);
+      qc.setQueryData<AgentSkillLink[]>(
+        key,
+        skillIds.map((skill_id, order) => ({ agent_id: agentId, skill_id, order })),
+      );
+      return { prev, key };
+    },
+    onError: (_e, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(ctx.key, ctx.prev);
+    },
+    onSettled: (_d, _e, { agentId }) =>
+      qc.invalidateQueries({ queryKey: ["agent", agentId, "skills"] }),
   });
 }
 

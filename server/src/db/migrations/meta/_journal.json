@@ -71,6 +71,34 @@
       "when": 1781464392464,
       "tag": "0009_complex_runaways",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783195261724,
+      "tag": "0010_crazy_wildside",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1783249229463,
+      "tag": "0011_yielding_speed",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1783274009919,
+      "tag": "0012_adorable_shinobi_shaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1783282705310,
+      "tag": "0013_fair_nightshade",
+      "breakpoints": true
     }
   ]
 }

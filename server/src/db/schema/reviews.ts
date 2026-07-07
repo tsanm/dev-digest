@@ -39,6 +39,8 @@ export const findings = pgTable('findings', {
   rationale: text('rationale').notNull(),
   suggestion: text('suggestion'),
   confidence: doublePrecision('confidence').notNull(),
+  // Skill attribution — the name of the attached skill/rule this finding is based on (nullable).
+  rule: text('rule'),
   kind: text('kind').notNull().default('finding'),
   trifectaComponents: jsonb('trifecta_components').$type<string[]>(),
   acceptedAt: timestamp('accepted_at', { withTimezone: true }),

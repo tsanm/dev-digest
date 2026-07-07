@@ -106,7 +106,14 @@ export function assemblePrompt(parts: PromptParts): AssembledPrompt {
   if (prDescription) {
     userSections.push(`## PR description\n${wrapUntrusted('pr-description', prDescription)}`);
   }
-  if (skillsBlock) userSections.push(`## Skills / rules\n${skillsBlock}`);
+  if (skillsBlock) {
+    userSections.push(
+      `## Skills / rules\n${skillsBlock}\n\n` +
+        'When a finding is based on one of the rules above, set that finding\'s `rule` ' +
+        "field to the rule's name (its heading, e.g. `breaking-change`). Leave `rule` " +
+        'null for findings that do not stem from a specific rule above.',
+    );
+  }
   if (memoryBlock) userSections.push(`## Relevant memory\n${memoryBlock}`);
   if (parts.repoMap && parts.repoMap.trim().length > 0) {
     userSections.push(`## Repo skeleton\n${wrapUntrusted('repo-map', parts.repoMap)}`);

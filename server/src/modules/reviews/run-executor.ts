@@ -58,6 +58,7 @@ export class ReviewRunExecutor {
     repo: typeof schema.repos.$inferSelect,
     jobs: { agent: AgentRow; runId: string }[],
     logger?: Logger,
+    opts: { skipSkills?: boolean } = {},
   ): Promise<void> {
     // ONE logger fanned out over every queued run: shared pre-work (diff +
     // intent) is streamed into each target agent's Live Log and persisted into
@@ -111,7 +112,7 @@ export class ReviewRunExecutor {
         `review: agent "${agent.name}" started (${agent.provider}/${agent.model})`,
       );
       try {
-        const outcome = await this.runOneAgent(workspaceId, pull, repo, diff, agent, runId, runLog);
+        const outcome = await this.runOneAgent(workspaceId, pull, repo, diff, agent, runId, runLog, opts);
         logger?.info(
           {
             runId,
@@ -143,6 +144,7 @@ export class ReviewRunExecutor {
     agent: AgentRow,
     runId: string,
     parentLog: RunLogger,
+    opts: { skipSkills?: boolean } = {},
   ): Promise<RunOutcome> {
     const start = Date.now();
     // Narrow the fanned-out pre-work logger to THIS run; the shared diff/intent
@@ -183,6 +185,20 @@ export class ReviewRunExecutor {
 
       const task = taskLine(pull) + rankNote;
 
+      // Per-agent skills: inject the bodies of ENABLED linked skills, in order,
+      // as the `## Skills / rules` prompt block (surfaced in the run trace). A
+      // disabled or unlinked skill contributes nothing.
+      // `skipSkills` = baseline run for the with/without-skills comparison: gather
+      // nothing so the `## Skills / rules` block is empty for this run.
+      const linkedSkills = opts.skipSkills
+        ? []
+        : await this.container.agentsRepo.linkedSkills(agent.id);
+      const activeSkills = linkedSkills.filter((l) => l.skill.enabled);
+      const skillBodies = activeSkills.map((l) => l.skill.body);
+      const skillNames = activeSkills.map((l) => l.skill.name);
+      if (opts.skipSkills) runLog.info('skills: skipped (baseline run — no skills injected)');
+      else if (skillNames.length) runLog.info(`skills: injected ${skillNames.join(', ')}`);
+
       // ---- Engine: assemble → single-pass → grounding -----------------------
       // The pure review pipeline lives in @devdigest/reviewer-core (shared with
       // the CI runner). The service owns only I/O: repo-intel context resolution
@@ -203,6 +219,8 @@ export class ReviewRunExecutor {
         // PR author's description/body — untrusted; assemblePrompt wraps +
         // truncates it. Omitted when the PR has no body.
         ...(pull.body ? { prDescription: pull.body } : {}),
+        // Per-agent enabled skills → `## Skills / rules`; omit-when-empty.
+        ...(skillBodies.length ? { skills: skillBodies } : {}),
         task,
         sessionId: `${repo.owner}/${repo.name}#${pull.number}:${agent.name}`,
         onEvent: (e) => runLog.event(e.kind, e.msg, e.data),
@@ -212,7 +230,13 @@ export class ReviewRunExecutor {
       });
       const { tokensIn, tokensOut, grounding } = outcome;
 
-      const keptFindings = outcome.review.findings;
+      // Skill attribution is only meaningful when skills were actually injected.
+      // On a baseline run (no skills in the prompt) the model can still guess a
+      // plausible `rule` name — strip it so a "no skills" run never shows a skill.
+      const keptFindings =
+        skillNames.length === 0
+          ? outcome.review.findings.map((f) => ({ ...f, rule: null }))
+          : outcome.review.findings;
 
       // ---- Persist review + findings ----------------------------------------
       const review = await this.repo.insertReview({
@@ -249,6 +273,8 @@ export class ReviewRunExecutor {
         grounding,
         score: outcome.review.score,
         blockers,
+        skillsCount: skillBodies.length,
+        skillNames,
         error: null,
       });
 

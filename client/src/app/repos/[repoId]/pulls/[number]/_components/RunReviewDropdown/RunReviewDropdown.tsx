@@ -38,7 +38,10 @@ export function RunReviewDropdown({
   const all = agents ?? [];
   const hasEnabled = all.some((a) => a.enabled);
 
-  const kick = async (opts: { all?: boolean; agentId?: string }) => {
+  // Each menu action fires EXACTLY ONE run. A re-entrancy guard (run.isPending)
+  // prevents a rapid double-click from starting a duplicate run.
+  const kick = async (opts: { all?: boolean; agentId?: string; skipSkills?: boolean }) => {
+    if (run.isPending) return;
     onRunStart?.();
     try {
       const res = await run.mutateAsync({ prId, ...opts });
@@ -76,7 +79,24 @@ export function RunReviewDropdown({
       onClick: () => kick({ all: true }),
     },
     { divider: true },
+    { label: t("runReview.withSkillsHeader"), icon: "Sparkles" as const, muted: true },
     ...agentItems,
+    // A separate "baseline (no skills)" run per agent — ONE run each, for the
+    // with/without-skills comparison. No hidden double-firing.
+    ...(all.length
+      ? [
+          { divider: true } as DropdownItemDef,
+          { label: t("runReview.baselineHeader"), icon: "Slash" as const, muted: true },
+          ...all.map(
+            (a): DropdownItemDef => ({
+              label: a.name,
+              icon: "Slash" as const,
+              hint: t("runReview.baselineHint"),
+              onClick: () => kick({ agentId: a.id, skipSkills: true }),
+            }),
+          ),
+        ]
+      : []),
     { divider: true },
     { label: t("runReview.configureAgents"), icon: "Settings", muted: true, onClick: () => router.push("/agents") },
   ];

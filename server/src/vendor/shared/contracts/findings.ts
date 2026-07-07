@@ -55,6 +55,14 @@ export const Finding = z.object({
   rationale: z.string(), // markdown
   suggestion: z.string().nullish(), // markdown
   confidence: z.number().min(0).max(1),
+  // Skill attribution: when a finding is driven by an attached skill/rule, the
+  // name of that skill (e.g. "breaking-change"); null for general findings.
+  rule: z
+    .string()
+    .nullish()
+    .describe(
+      'If this finding is based on a rule from the "## Skills / rules" block, set this to that skill\'s name (its first-line/heading, e.g. "breaking-change"). Null if the finding does not stem from a specific attached rule.',
+    ),
   kind: FindingKind.nullish(),
   // Lethal-trifecta variant fields (present only when kind === 'lethal_trifecta')
   trifecta_components: z.array(TrifectaComponent).nullish(),

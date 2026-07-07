@@ -35,11 +35,11 @@ export default function PullsPage() {
   const { data: pulls, isLoading, isError, error, refetch } = usePulls(repoId);
   const refresh = useRefreshRepo();
 
-  // Default to "needs review" — the most actionable filter on open.
-  const status = search.get("status") ?? "needs_review";
+  // Default to "all" — always shows every open PR (needs_review can be empty).
+  const status = search.get("status") ?? "all";
   const setStatus = (k: string) => {
     const sp = new URLSearchParams(search.toString());
-    sp.set("status", k); // always explicit so "all" sticks over the needs_review default
+    sp.set("status", k); // always explicit
     router.replace(`/repos/${repoId}/pulls?${sp.toString()}`);
   };
 

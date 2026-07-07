@@ -15,6 +15,31 @@ function systemOf(parts: Parameters<typeof assemblePrompt>[0]): string {
   return assemblePrompt(parts).messages[0]!.content;
 }
 
+// L02 Skills mechanism — the linked skill bodies must reach the prompt as a
+// dedicated "## Skills / rules" block AND be recorded in the run-trace assembly,
+// so the UI can show "the skill changed the review + how many tokens it added".
+describe('assemblePrompt — ## Skills / rules (L02)', () => {
+  it('renders a skills block from the linked bodies, in order, and records it in the trace', () => {
+    const parts = { system: 'sys', diff: 'DIFF', skills: ['RULE A: no then-chains', 'RULE B: cite file:line'] };
+    const user = userOf(parts);
+    const { assembly } = assemblePrompt(parts);
+    expect(user).toContain('## Skills / rules');
+    // order preserved (A before B) — order = prompt block sequence
+    expect(user.indexOf('RULE A')).toBeLessThan(user.indexOf('RULE B'));
+    expect(assembly.skills).toContain('RULE A');
+    expect(assembly.skills).toContain('RULE B');
+    // instructs the model to attribute each finding to the rule that fired it
+    expect(user).toMatch(/set that finding's `rule`/);
+  });
+
+  it('omits the block AND nulls the trace field when no skills are linked (disabled → excluded upstream)', () => {
+    expect(userOf({ system: 'sys', diff: 'DIFF' })).not.toContain('## Skills / rules');
+    expect(assemblePrompt({ system: 'sys', diff: 'DIFF' }).assembly.skills ?? null).toBeNull();
+    // an empty array (e.g. all linked skills disabled) is treated the same as none
+    expect(userOf({ system: 'sys', diff: 'DIFF', skills: [] })).not.toContain('## Skills / rules');
+  });
+});
+
 describe('assemblePrompt — shared injection guard (server + CI)', () => {
   const sys = systemOf({ system: 'AGENT-SYS', diff: 'DIFF' });
 

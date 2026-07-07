@@ -43,12 +43,19 @@ export function ReviewRunAccordion({
   targetNonce?: number;
 }) {
   const [open, setOpen] = React.useState(defaultOpen);
+  const [highlighted, setHighlighted] = React.useState(false);
   const rootRef = React.useRef<HTMLDivElement | null>(null);
   React.useEffect(() => {
     if (review.run_id && review.run_id === targetRunId) {
       setOpen(true);
       rootRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      // Flash the targeted run so it's unmistakable WHICH one was opened
+      // (matched by run_id — timeline runs and their reviews share it).
+      setHighlighted(true);
+      const timer = setTimeout(() => setHighlighted(false), 1800);
+      return () => clearTimeout(timer);
     }
+    return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetRunId, targetNonce, review.run_id]);
   const del = useDeleteReview(prId);
@@ -61,7 +68,9 @@ export function ReviewRunAccordion({
       ref={rootRef}
       id={review.run_id ? `review-run-${review.run_id}` : undefined}
       style={{
-        border: "1px solid var(--border)",
+        border: highlighted ? "1px solid var(--accent-text)" : "1px solid var(--border)",
+        boxShadow: highlighted ? "0 0 0 3px var(--accent-bg)" : "none",
+        transition: "box-shadow .25s, border-color .25s",
         borderRadius: 10,
         background: "var(--bg-surface)",
         marginBottom: 14,
@@ -86,17 +95,37 @@ export function ReviewRunAccordion({
           color: "var(--text-primary)",
         }}
       >
-        <Icon.Cpu size={15} style={{ color: "var(--text-muted)" }} />
-        <span style={{ fontWeight: 600, fontSize: 14 }}>{review.agent_name ?? "Agent"}</span>
-        {review.verdict && (
-          <Badge color={verdictColor} bg="transparent">
-            {review.verdict.replace("_", " ")}
-          </Badge>
-        )}
-        <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-          {findings.length} finding{findings.length === 1 ? "" : "s"}
-          {blockers > 0 ? ` · ${blockers} blocker${blockers === 1 ? "" : "s"}` : ""}
+        <Icon.Cpu size={16} style={{ color: "var(--accent-text)" }} />
+        <span style={{ fontWeight: 700, fontSize: 15.5, color: "var(--text-primary)" }}>
+          {review.agent_name ?? "Agent"}
         </span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>
+          {findings.length} finding{findings.length === 1 ? "" : "s"}
+          {blockers > 0 ? (
+            <span style={{ color: "var(--crit)", fontWeight: 700 }}>
+              {" · "}
+              {blockers} blocker{blockers === 1 ? "" : "s"}
+            </span>
+          ) : (
+            ""
+          )}
+        </span>
+        {review.verdict && (
+          <span
+            style={{
+              fontSize: 10.5,
+              fontWeight: 700,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              padding: "1px 7px",
+              borderRadius: 999,
+              color: verdictColor,
+              background: "color-mix(in srgb, currentColor 14%, transparent)",
+            }}
+          >
+            {review.verdict.replace("_", " ")}
+          </span>
+        )}
         <span style={{ flex: 1 }} />
         {review.score != null && (
           <Badge mono color="var(--text-secondary)">

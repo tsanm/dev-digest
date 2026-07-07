@@ -1,16 +1,19 @@
-# Breaking Change Guard
+# breaking-change
 
-Flag any change that removes or renames a **public** API contract without a backwards-compatible path. Applies when reviewing a PR diff of routes, DTOs, or exported types.
+**Directive:** Flag any change that removes or renames a public API contract — a route, a request/response field, or an exported type — when there is no backwards-compatible path. Mark it CRITICAL and cite the exact `file:line`.
 
-## Rule
-- **CRITICAL** when a public route is removed, or its method/path changes.
-- **CRITICAL** when a request or response field is **removed** or **renamed**.
-- **CRITICAL** when a **new required** request field is added (old clients break).
-- **WARNING** when an enum value is removed, or a type is narrowed (e.g. `string` → a literal union).
-- A change is **NOT** breaking if the old contract still works: an additive *optional* field, a new route, a widened type.
-- Cite the exact `file:line` of the offending contract change.
+## When it applies
+Reviewing a PR diff that touches public routes, DTOs/schemas, or exported types that external consumers depend on.
 
-## Good
+## Rules
+- **CRITICAL** — a public route is removed, or its method/path changes with no alias.
+- **CRITICAL** — a request or response field is **removed** or **renamed**.
+- **CRITICAL** — a **new required** request field is added (old clients that don't send it break).
+- **WARNING** — an enum value is removed, or a type is narrowed (e.g. `string` → a literal union).
+- **NOT breaking** — the old contract still works: an additive *optional* field, a brand-new route, a widened type.
+- Always state *what* broke and cite the offending `file:line`.
+
+## Good — additive, backwards-compatible
 ```diff
   export const UserDto = z.object({
     id: z.string(),
@@ -19,7 +22,7 @@ Flag any change that removes or renames a **public** API contract without a back
   });
 ```
 
-## Bad
+## Bad — rename + route change with no alias
 ```diff
   export const UserDto = z.object({
     id: z.string(),
@@ -27,5 +30,5 @@ Flag any change that removes or renames a **public** API contract without a back
 +   name: z.string(),                  // renamed userName → name: BREAKING for every client
   });
 - app.get('/users/:id', handler);
-+ app.get('/v2/users/:id', handler);   // route path changed with no alias: BREAKING
++ app.get('/v2/users/:id', handler);   // path changed with no alias/redirect: BREAKING
 ```

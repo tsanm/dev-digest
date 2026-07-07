@@ -49,6 +49,16 @@ describe("FindingCard (smoke, both themes)", () => {
     });
   });
 
+  it("shows the skill/rule attribution badge when the finding has a rule", () => {
+    renderWithIntl(<FindingCard f={{ ...FINDING, rule: "breaking-change" }} defaultExpanded onAction={() => {}} />);
+    expect(screen.getByText("breaking-change")).toBeInTheDocument();
+  });
+
+  it("omits the rule badge when the finding has no rule", () => {
+    renderWithIntl(<FindingCard f={{ ...FINDING, rule: null }} defaultExpanded onAction={() => {}} />);
+    expect(screen.queryByText("breaking-change")).not.toBeInTheDocument();
+  });
+
   it("fires accept/dismiss actions", () => {
     const onAction = vi.fn();
     renderWithIntl(<FindingCard f={FINDING} defaultExpanded onAction={onAction} />);

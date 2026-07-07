@@ -28,6 +28,10 @@ export const agentRuns = pgTable('agent_runs', {
   score: integer('score'),
   /** Findings that tripped the agent's gate (severity ≥ ciFailOn). */
   blockers: integer('blockers'),
+  /** Number of skills injected into this run's prompt (0 = baseline / no skills). */
+  skillsCount: integer('skills_count'),
+  /** Names of the skills injected into this run's prompt (empty = baseline). */
+  skillNames: jsonb('skill_names').$type<string[]>(),
 });
 
 /** Whole trace of one run as a SINGLE jsonb document. */

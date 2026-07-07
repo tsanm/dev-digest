@@ -39,6 +39,16 @@ export const s = {
     textDecoration: dismissed ? "line-through" : "none",
   }),
   acceptedTag: { fontSize: 12, fontWeight: 600, color: "var(--ok)" } satisfies CSSProperties,
+  // Skill/rule attribution chip — which attached skill fired this finding.
+  ruleTag: {
+    fontSize: 11,
+    fontWeight: 600,
+    fontFamily: "var(--font-mono)",
+    color: "var(--accent-text)",
+    background: "var(--accent-bg)",
+    padding: "1px 6px",
+    borderRadius: 4,
+  } satisfies CSSProperties,
   dismissedTag: {
     fontSize: 12,
     fontWeight: 600,

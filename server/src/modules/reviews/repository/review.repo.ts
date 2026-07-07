@@ -46,6 +46,7 @@ export async function insertFindings(
         rationale: f.rationale,
         suggestion: f.suggestion ?? null,
         confidence: f.confidence,
+        rule: f.rule ?? null,
         kind: f.kind ?? 'finding',
         trifectaComponents: f.trifecta_components ?? null,
       })),

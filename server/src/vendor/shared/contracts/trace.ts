@@ -110,5 +110,9 @@ export const RunSummary = z.object({
   // findings that trip the agent's gate. Null on failed/cancelled runs.
   score: z.number().int().nullable(),
   blockers: z.number().int().nullable(),
+  /** Skills injected into this run's prompt (0 = baseline / no skills; null = unknown/old run). */
+  skills_count: z.number().int().nullable(),
+  /** Names of the skills injected into this run's prompt. */
+  skill_names: z.array(z.string()).nullable(),
 });
 export type RunSummary = z.infer<typeof RunSummary>;

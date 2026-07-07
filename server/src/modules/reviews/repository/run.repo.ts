@@ -64,6 +64,8 @@ export async function listRunsForPull(
     ran_at: run.ranAt ? run.ranAt.toISOString() : null,
     score: run.score,
     blockers: run.blockers,
+    skills_count: run.skillsCount,
+    skill_names: run.skillNames ?? null,
   }));
 }
 
@@ -152,6 +154,10 @@ export async function completeAgentRun(
     score?: number | null;
     /** Findings that tripped the agent's gate; 0 on failed/cancelled runs. */
     blockers?: number | null;
+    /** Number of skills injected into the prompt (0 = baseline/no skills). */
+    skillsCount?: number | null;
+    /** Names of the skills injected into the prompt. */
+    skillNames?: string[] | null;
     /** Failure reason (status='failed') / cancellation note. Null clears it. */
     error?: string | null;
   },
@@ -167,6 +173,8 @@ export async function completeAgentRun(
       grounding: values.grounding,
       score: values.score ?? null,
       blockers: values.blockers ?? null,
+      skillsCount: values.skillsCount ?? null,
+      skillNames: values.skillNames ?? null,
       error: values.error ?? null,
     })
     .where(eq(t.agentRuns.id, runId));

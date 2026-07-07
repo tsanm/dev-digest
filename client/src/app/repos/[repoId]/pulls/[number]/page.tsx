@@ -74,7 +74,15 @@ export default function PRDetailPage() {
     [reviews],
   );
   const lethalTrifecta = allFindings.filter((f) => f.kind === "lethal_trifecta");
-  const findingsCount = allFindings.length;
+  // "Agent runs" tab badge = number of distinct runs on this PR — the union of
+  // review runs (reviews) and timeline runs (agent_runs), keyed by run_id so an
+  // in-progress run (no review yet) and a seed review (no agent_run) both count.
+  const runsCount = React.useMemo(() => {
+    const ids = new Set<string>();
+    for (const r of runs) ids.add(r.run_id ?? r.id);
+    for (const r of prRuns ?? []) ids.add(r.run_id);
+    return ids.size;
+  }, [runs, prRuns]);
 
   const repoName = activeRepo?.full_name ?? repoId;
   // The real "owner/repo" (null until the repo is loaded) — used to build
@@ -126,7 +134,7 @@ export default function PRDetailPage() {
         pr={pr}
         prId={prId}
         tab={tab}
-        findingsCount={findingsCount}
+        runsCount={runsCount}
         githubUrl={repoFullName ? githubPrUrl(repoFullName, pr.number) : null}
         onSetTab={setTab}
         onRunStart={() => setTab("findings")}

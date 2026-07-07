@@ -289,6 +289,159 @@ d('A2 reviews + agents (Testcontainers pg)', () => {
     await app.close();
   });
 
+  it('L02 injection: ENABLED linked skills reach the run trace as a block; DISABLED ones are excluded', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const agent = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'Skilled', provider: 'openai', model: 'gpt-4.1', system_prompt: 'sec' },
+      })
+    ).json();
+
+    // one ENABLED skill, one DISABLED skill — both LINKED to the agent
+    const enabled = (
+      await app.inject({
+        method: 'POST',
+        url: '/skills',
+        payload: { name: 'enabled-rule', body: 'ENABLED-SKILL-BODY-marker', type: 'custom', enabled: true },
+      })
+    ).json();
+    const disabled = (
+      await app.inject({
+        method: 'POST',
+        url: '/skills',
+        payload: { name: 'disabled-rule', body: 'DISABLED-SKILL-BODY-marker', type: 'custom', enabled: false },
+      })
+    ).json();
+    await app.inject({
+      method: 'POST',
+      url: `/agents/${agent.id}/skills`,
+      payload: { skill_ids: [enabled.id, disabled.id] },
+    });
+
+    const body = (
+      await app.inject({ method: 'POST', url: `/pulls/${pr.id}/review`, payload: { agentId: agent.id } })
+    ).json();
+    await waitForPrRuns(pg.handle.db, pr.id, { expected: 1 });
+    const runId = body.runs[0].run_id;
+
+    const [row] = await pg.handle.db.select().from(t.runTraces).where(eq(t.runTraces.runId, runId));
+    const skillsBlock = ((row!.trace as { prompt_assembly?: { skills?: string | null } }).prompt_assembly?.skills) ?? '';
+    // enabled skill body is injected; disabled one is filtered out at gather time
+    expect(skillsBlock).toContain('ENABLED-SKILL-BODY-marker');
+    expect(skillsBlock).not.toContain('DISABLED-SKILL-BODY-marker');
+    await app.close();
+  });
+
+  it('L02 baseline: skip_skills:true runs the agent WITHOUT injecting its linked skills', async () => {
+    const app = await appWith(REVIEW_FIXTURE);
+    const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const agent = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'Baseline', provider: 'openai', model: 'gpt-4.1', system_prompt: 'sec' },
+      })
+    ).json();
+    const skill = (
+      await app.inject({
+        method: 'POST',
+        url: '/skills',
+        payload: { name: 'r', body: 'ENABLED-SKILL-BODY', type: 'custom', enabled: true },
+      })
+    ).json();
+    await app.inject({ method: 'POST', url: `/agents/${agent.id}/skills`, payload: { skill_ids: [skill.id] } });
+
+    // baseline run: skip skills even though one is linked + enabled
+    const body = (
+      await app.inject({
+        method: 'POST',
+        url: `/pulls/${pr.id}/review`,
+        payload: { agentId: agent.id, skip_skills: true },
+      })
+    ).json();
+    await waitForPrRuns(pg.handle.db, pr.id, { expected: 1 });
+    const [row] = await pg.handle.db
+      .select()
+      .from(t.runTraces)
+      .where(eq(t.runTraces.runId, body.runs[0].run_id));
+    const skillsBlock = ((row!.trace as { prompt_assembly?: { skills?: string | null } }).prompt_assembly?.skills) ?? '';
+    expect(skillsBlock).not.toContain('ENABLED-SKILL-BODY'); // skipped despite being linked+enabled
+    await app.close();
+  });
+
+  it('L02 baseline: a no-skills run strips any `rule` the model guessed (no phantom skill attribution)', async () => {
+    // model returns a finding tagged with a skill, but the run injects NO skills
+    const fixture = {
+      ...REVIEW_FIXTURE,
+      findings: REVIEW_FIXTURE.findings.map((f, i) => (i === 0 ? { ...f, rule: 'breaking-change' } : f)),
+    };
+    const app = await appWith(fixture);
+    const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const agent = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'BaseAttr', provider: 'openai', model: 'gpt-4.1', system_prompt: 'sec' },
+      })
+    ).json();
+    const skill = (
+      await app.inject({
+        method: 'POST',
+        url: '/skills',
+        payload: { name: 'r', body: 'B', type: 'custom', enabled: true },
+      })
+    ).json();
+    await app.inject({ method: 'POST', url: `/agents/${agent.id}/skills`, payload: { skill_ids: [skill.id] } });
+
+    // baseline run: skip skills → the guessed `rule` must be cleared
+    await app.inject({
+      method: 'POST',
+      url: `/pulls/${pr.id}/review`,
+      payload: { agentId: agent.id, skip_skills: true },
+    });
+    await waitForPrRuns(pg.handle.db, pr.id, { expected: 1 });
+    const reviews = await (await app.inject({ method: 'GET', url: `/pulls/${pr.id}/reviews` })).json();
+    const finding = reviews.at(-1).findings.find((f: { file: string }) => f.file === 'src/config.ts');
+    expect(finding.rule ?? null).toBeNull(); // no skills injected → no attribution
+    await app.close();
+  });
+
+  it("L02 attribution: a finding's `rule` (the skill it came from) round-trips through persistence", async () => {
+    // tag the (grounded) valid finding with the skill that produced it
+    const fixture = {
+      ...REVIEW_FIXTURE,
+      findings: REVIEW_FIXTURE.findings.map((f, i) => (i === 0 ? { ...f, rule: 'breaking-change' } : f)),
+    };
+    const app = await appWith(fixture);
+    const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);
+    const agent = (
+      await app.inject({
+        method: 'POST',
+        url: '/agents',
+        payload: { name: 'Attr', provider: 'openai', model: 'gpt-4.1', system_prompt: 'sec' },
+      })
+    ).json();
+    // attribution is only kept when a skill is actually injected — link one
+    const skill = (
+      await app.inject({
+        method: 'POST',
+        url: '/skills',
+        payload: { name: 'breaking-change', body: 'B', type: 'custom', enabled: true },
+      })
+    ).json();
+    await app.inject({ method: 'POST', url: `/agents/${agent.id}/skills`, payload: { skill_ids: [skill.id] } });
+
+    await app.inject({ method: 'POST', url: `/pulls/${pr.id}/review`, payload: { agentId: agent.id } });
+    await waitForPrRuns(pg.handle.db, pr.id, { expected: 1 });
+    const reviews = await (await app.inject({ method: 'GET', url: `/pulls/${pr.id}/reviews` })).json();
+    const finding = reviews.at(-1).findings.find((f: { file: string }) => f.file === 'src/config.ts');
+    expect(finding.rule).toBe('breaking-change'); // persisted + returned in the DTO
+    await app.close();
+  });
+
   it('run all enabled agents reviews with each enabled agent', async () => {
     const app = await appWith(REVIEW_FIXTURE);
     const { pr } = await setupRepoAndPr(pg.handle.db, workspaceId);

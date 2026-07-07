@@ -178,7 +178,46 @@ export function RunHistory({
                 </button>{" "}
                 <span className="mono" style={{ fontSize: 12, fontWeight: 400, color: "var(--text-muted)" }}>
                   {r.provider}/{r.model}
-                </span>
+                </span>{" "}
+                {r.skill_names && r.skill_names.length > 0 ? (
+                  <span
+                    style={{ display: "inline-flex", flexWrap: "wrap", gap: 4, verticalAlign: "middle" }}
+                    title={t("runStatus.withSkillsTitle")}
+                  >
+                    {r.skill_names.map((name) => (
+                      <span
+                        key={name}
+                        className="mono"
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: "1px 7px",
+                          borderRadius: 999,
+                          whiteSpace: "nowrap",
+                          color: "var(--accent-text)",
+                          background: "var(--accent-bg)",
+                        }}
+                      >
+                        {name}
+                      </span>
+                    ))}
+                  </span>
+                ) : r.skills_count === 0 ? (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "1px 7px",
+                      borderRadius: 999,
+                      whiteSpace: "nowrap",
+                      color: "var(--text-muted)",
+                      background: "var(--border)",
+                    }}
+                    title={t("runStatus.noSkillsTitle")}
+                  >
+                    {t("runStatus.noSkills")}
+                  </span>
+                ) : null}
               </div>
               {r.status === "failed" && r.error && (
                 <div

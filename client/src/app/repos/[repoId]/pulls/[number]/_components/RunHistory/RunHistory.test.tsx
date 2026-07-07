@@ -30,6 +30,8 @@ function run(o: Partial<RunSummary>): RunSummary {
     ran_at: "2026-06-11T18:44:34.000Z",
     score: null,
     blockers: null,
+    skills_count: null,
+    skill_names: null,
     ...o,
   };
 }
@@ -66,6 +68,22 @@ describe("RunHistory — outcome badge", () => {
   it("a failed run reads 'error'", () => {
     renderRuns([run({ status: "failed", error: "boom", score: null, blockers: null })]);
     expect(screen.getByText("error")).toBeInTheDocument();
+  });
+
+  it("lists the actual skill names used by the run (not just a count)", () => {
+    renderRuns([
+      run({ status: "done", score: 65, skills_count: 2, skill_names: ["breaking-change", "deprecation-policy"] }),
+    ]);
+    expect(screen.getByText("breaking-change")).toBeInTheDocument();
+    expect(screen.getByText("deprecation-policy")).toBeInTheDocument();
+    cleanup();
+    // baseline run (0 skills) reads "no skills"
+    renderRuns([run({ status: "done", score: 100, skills_count: 0, skill_names: [] })]);
+    expect(screen.getByText("no skills")).toBeInTheDocument();
+    cleanup();
+    // old/unknown runs (null) show no badge
+    renderRuns([run({ status: "done", score: 90, skills_count: null, skill_names: null })]);
+    expect(screen.queryByText(/skills/)).not.toBeInTheDocument();
   });
 
   it("a running run reads 'running'", () => {

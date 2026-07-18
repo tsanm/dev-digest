@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { Icon } from "@devdigest/ui";
 import type { PrFile } from "@/lib/types";
 import { AUTO_EXPAND_MAX_LINES } from "../constants";
-import { parsePatch, type Line } from "../helpers";
+import { parsePatch, type Line, scrollToDiffLine } from "../helpers";
 import {
   buildThreads,
   keysForLine,
@@ -30,7 +30,16 @@ function threadsForLine(ln: Line, matched: Map<string, CommentThread[]>): Commen
   return out;
 }
 
-export function FileCard({ file, commenting }: { file: PrFile; commenting?: DiffCommentApi }) {
+export function FileCard({
+  file,
+  commenting,
+  findingLines,
+}: {
+  file: PrFile;
+  commenting?: DiffCommentApi;
+  /** Smart Diff: line numbers the last review flagged → clickable "N findings" badge. */
+  findingLines?: number[];
+}) {
   const t = useTranslations("shell");
   const [open, setOpen] = React.useState(
     (file.additions ?? 0) + (file.deletions ?? 0) <= AUTO_EXPAND_MAX_LINES
@@ -71,6 +80,34 @@ export function FileCard({ file, commenting }: { file: PrFile; commenting?: Diff
             <Icon.MessageSquare size={12} />
             {commentCount}
           </span>
+        )}
+        {findingLines && findingLines.length > 0 && (
+          <button
+            type="button"
+            aria-label={`${findingLines.length} findings — jump to line ${findingLines[0]}`}
+            onClick={(e) => {
+              e.stopPropagation(); // don't toggle the card
+              setOpen(true); // ensure the target line is rendered
+              // rAF so the line exists in the DOM before we scroll to it
+              requestAnimationFrame(() => scrollToDiffLine(file.path, findingLines[0]!));
+            }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              border: "none",
+              borderRadius: 999,
+              padding: "1px 8px",
+              color: "var(--crit)",
+              background: "var(--crit-bg)",
+            }}
+          >
+            <Icon.AlertOctagon size={11} />
+            {findingLines.length} {findingLines.length === 1 ? "finding" : "findings"}
+          </button>
         )}
       </div>
       {open && (

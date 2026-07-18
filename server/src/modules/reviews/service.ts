@@ -7,6 +7,7 @@ import { type ReviewDto, type ReviewDtoFinding } from './helpers.js';
 import { ReviewRunExecutor, type Logger } from './run-executor.js';
 import { actOnFinding as actOnFindingImpl } from './findings.js';
 import { reviewToDto } from './helpers.js';
+import { smartDiff } from './smart-diff.js';
 
 // Re-export DTO types + converters for backward-compatible imports from
 // './service.js' (these previously lived here; logic now in ./helpers.ts).
@@ -69,6 +70,14 @@ export class ReviewService {
   /** All runs for a PR (any status), newest first — the run history (incl. failures). */
   async listRuns(workspaceId: string, prId: string) {
     return this.repo.listRunsForPull(workspaceId, prId);
+  }
+
+  /**
+   * Smart Diff (L03): risk-ordered file layout (core/wiring/boilerplate) with
+   * finding-line overlay + split nudge. Deterministic — NO model call.
+   */
+  async smartDiff(workspaceId: string, prId: string) {
+    return smartDiff(this.container, this.repo, workspaceId, prId);
   }
 
   /** Delete one run from the history (+ its trace). */

@@ -14,9 +14,12 @@ import { FileCard } from "../FileCard";
 export function DiffViewer({
   files,
   commenting,
+  findingLines,
 }: {
   files: PrFile[];
   commenting?: DiffCommentApi;
+  /** Smart Diff overlay: per-path finding line numbers → clickable badge. */
+  findingLines?: Record<string, number[]>;
 }) {
   const t = useTranslations("shell");
   if (!files || files.length === 0) {
@@ -25,7 +28,7 @@ export function DiffViewer({
   return (
     <div style={s.list}>
       {files.map((f, i) => (
-        <FileCard key={i} file={f} commenting={commenting} />
+        <FileCard key={i} file={f} commenting={commenting} findingLines={findingLines?.[f.path]} />
       ))}
     </div>
   );

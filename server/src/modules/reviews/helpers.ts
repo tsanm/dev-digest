@@ -2,8 +2,22 @@
  * Pure helpers for the review service (side-effect free; operate purely on
  * their arguments — no DB / network / `this`).
  */
-import type { Finding } from '@devdigest/shared';
+import type { Finding, SmartDiffRole } from '@devdigest/shared';
 import type { FindingRow, PullRow, ReviewRow } from './repository.js';
+import { BOILERPLATE_RE, WIRING_RE } from './constants.js';
+
+/**
+ * Smart Diff (L03): classify a changed file by path into core / wiring /
+ * boilerplate — purely heuristic, deterministic, no LLM. Precedence is
+ * boilerplate > wiring > core, so lock-files always land in boilerplate.
+ * Patterns live in constants.ts (never inline). Case-insensitive.
+ */
+export function classifyFile(path: string): SmartDiffRole {
+  const p = path.toLowerCase();
+  if (BOILERPLATE_RE.test(p)) return 'boilerplate';
+  if (WIRING_RE.test(p)) return 'wiring';
+  return 'core';
+}
 
 // reduceReviews + sliceDiff live in @devdigest/reviewer-core (pure engine logic
 // shared with the CI runner); re-exported here for backward-compatible imports.

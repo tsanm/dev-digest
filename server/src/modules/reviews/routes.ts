@@ -103,6 +103,12 @@ export default async function reviewsRoutes(appBase: FastifyInstance) {
     return service.listRuns(workspaceId, req.params.id);
   });
 
+  // ---- Smart Diff (L03): risk-ordered layout + finding overlay (no LLM) ----
+  app.get('/pulls/:id/smart-diff', { schema: { params: IdParams } }, async (req) => {
+    const { workspaceId } = await getContext(container, req);
+    return service.smartDiff(workspaceId, req.params.id);
+  });
+
   // ---- Delete one run from the history (+ its trace) ----------------------
   app.delete('/runs/:id', { schema: { params: IdParams } }, async (req) => {
     const { workspaceId } = await getContext(container, req);

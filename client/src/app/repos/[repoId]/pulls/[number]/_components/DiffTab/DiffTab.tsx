@@ -3,9 +3,10 @@
 import React from "react";
 import { SectionLabel, Button } from "@devdigest/ui";
 import { DiffViewer, type DiffCommentApi } from "@/components/diff-viewer";
-import { usePrComments, useCreatePrComment } from "@/lib/hooks/reviews";
+import { usePrComments, useCreatePrComment, useSmartDiff } from "@/lib/hooks/reviews";
 import { notify } from "@/lib/toast";
 import type { PrFile } from "@devdigest/shared";
+import { SmartDiffViewer } from "../SmartDiffViewer";
 
 interface DiffTabProps {
   prId: string | null;
@@ -18,6 +19,9 @@ interface DiffTabProps {
 export function DiffTab({ prId, filesCount, files, canComment }: DiffTabProps) {
   const { data: comments } = usePrComments(prId);
   const create = useCreatePrComment(prId);
+  const { data: smartDiff } = useSmartDiff(prId);
+  // Smart order (risk-ordered layout) is the default; toggle to the raw file order.
+  const [order, setOrder] = React.useState<"smart" | "original">("smart");
   // Comments start hidden so the diff is clean by default — toggle to reveal.
   const [showComments, setShowComments] = React.useState(false);
 
@@ -45,21 +49,52 @@ export function DiffTab({ prId, filesCount, files, canComment }: DiffTabProps) {
       <SectionLabel
         icon="Code"
         right={
-          commentCount > 0 ? (
-            <Button
-              kind="ghost"
-              size="sm"
-              icon={showComments ? "EyeOff" : "Eye"}
-              onClick={() => setShowComments((v) => !v)}
-            >
-              {showComments ? "Hide comments" : "Show comments"} ({commentCount})
-            </Button>
-          ) : undefined
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {smartDiff && (
+              <div role="tablist" aria-label="Diff order" style={{ display: "inline-flex", gap: 2, padding: 2, borderRadius: 8, background: "var(--border)" }}>
+                {(["smart", "original"] as const).map((o) => (
+                  <button
+                    key={o}
+                    type="button"
+                    role="tab"
+                    aria-selected={order === o}
+                    onClick={() => setOrder(o)}
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      padding: "3px 10px",
+                      borderRadius: 6,
+                      border: "none",
+                      cursor: "pointer",
+                      color: order === o ? "var(--text-primary)" : "var(--text-muted)",
+                      background: order === o ? "var(--bg-elevated)" : "transparent",
+                    }}
+                  >
+                    {o === "smart" ? "Smart order" : "Original order"}
+                  </button>
+                ))}
+              </div>
+            )}
+            {commentCount > 0 && (
+              <Button
+                kind="ghost"
+                size="sm"
+                icon={showComments ? "EyeOff" : "Eye"}
+                onClick={() => setShowComments((v) => !v)}
+              >
+                {showComments ? "Hide comments" : "Show comments"} ({commentCount})
+              </Button>
+            )}
+          </div>
         }
       >
         Files changed · {filesCount} files
       </SectionLabel>
-      <DiffViewer files={files} commenting={commenting} />
+      {order === "smart" && smartDiff ? (
+        <SmartDiffViewer smartDiff={smartDiff} files={files} commenting={commenting} />
+      ) : (
+        <DiffViewer files={files} commenting={commenting} />
+      )}
     </section>
   );
 }

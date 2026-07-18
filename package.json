@@ -1,0 +1,8 @@
+{
+  "name": "dev-digest",
+  "private": true,
+  "description": "Root task orchestrator (packages are standalone: client/, server/, reviewer-core/).",
+  "scripts": {
+    "verify:l03": "cd server && pnpm typecheck && pnpm exec vitest run reviews-helpers smart-diff && cd ../client && pnpm typecheck && pnpm exec vitest run SmartDiffViewer FileCard DiffTab"
+  }
+}

@@ -37,13 +37,16 @@ export async function smartDiff(
     /* degrade — keep the heuristic verdicts */
   }
 
-  // Finding-lines per file, from the latest reviews (expand start..end).
+  // One anchor line per finding (its start line), from the latest reviews. This
+  // is what the "N findings" badge counts and where a click jumps — so the count
+  // is the number of FINDINGS, not the number of touched lines (a finding
+  // spanning 5 lines is still one finding).
   const reviews = await repo.reviewsForPull(prId);
   const findingLinesByFile = new Map<string, Set<number>>();
   for (const { findings } of reviews) {
     for (const f of findings) {
       const set = findingLinesByFile.get(f.file) ?? new Set<number>();
-      for (let n = f.startLine; n <= f.endLine; n++) set.add(n);
+      set.add(f.startLine);
       findingLinesByFile.set(f.file, set);
     }
   }

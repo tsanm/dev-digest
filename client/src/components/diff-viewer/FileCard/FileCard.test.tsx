@@ -30,7 +30,7 @@ function renderCard(ui: React.ReactElement) {
 describe("FileCard — Smart Diff finding badge (V.P0.3)", () => {
   it("renders a clickable 'N findings' badge when the file has finding lines", () => {
     renderCard(<FileCard file={FILE} findingLines={[5]} />);
-    const badge = screen.getByRole("button", { name: /1 findings — jump to line 5/i });
+    const badge = screen.getByRole("button", { name: /1 finding — jump to line 5/i });
     expect(badge).toBeInTheDocument();
     expect(badge).toHaveTextContent("1 finding");
   });

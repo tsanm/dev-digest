@@ -84,7 +84,7 @@ export function FileCard({
         {findingLines && findingLines.length > 0 && (
           <button
             type="button"
-            aria-label={`${findingLines.length} findings — jump to line ${findingLines[0]}`}
+            aria-label={`${findingLines.length} ${findingLines.length === 1 ? "finding" : "findings"} — jump to line ${findingLines[0]}`}
             onClick={(e) => {
               e.stopPropagation(); // don't toggle the card
               setOpen(true); // ensure the target line is rendered

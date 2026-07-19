@@ -105,13 +105,16 @@ d('Smart Diff — GET /pulls/:id/smart-diff (L03)', () => {
     await a.close();
   });
 
-  it('R.P0.2 — finding_lines expanded from the last review (sorted, deduped); no-finding file → []', async () => {
+  it('R.P0.2 — finding_lines = ONE anchor per finding (badge counts findings, not lines); no-finding file → []', async () => {
     const a = await app();
     const pr = await seedPr([{ path: 'src/a.ts' }, { path: 'src/b.ts' }]);
+    // one finding spanning 10..12 → a single anchor [10] (badge should read "1 finding")
     await seedFinding(pr.id, 'src/a.ts', 10, 12);
+    // a second, distinct finding on the same file at 40 → anchors become [10, 40] (count 2)
+    await seedFinding(pr.id, 'src/a.ts', 40, 41);
     const sd = await get(a, pr.id);
     const files = sd.groups.flatMap((g) => g.files);
-    expect(files.find((x) => x.path === 'src/a.ts')!.finding_lines).toEqual([10, 11, 12]);
+    expect(files.find((x) => x.path === 'src/a.ts')!.finding_lines).toEqual([10, 40]); // 2 findings, not 5 lines
     expect(files.find((x) => x.path === 'src/b.ts')!.finding_lines).toEqual([]);
     await a.close();
   });

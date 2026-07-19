@@ -1,9 +1,18 @@
 "use client";
 
 import React from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { SectionLabel, Button } from "@devdigest/ui";
 import { DiffViewer, type DiffCommentApi } from "@/components/diff-viewer";
-import { usePrComments, useCreatePrComment, useSmartDiff, usePrReviews } from "@/lib/hooks/reviews";
+import {
+  usePrComments,
+  useCreatePrComment,
+  useSmartDiff,
+  usePrReviews,
+  usePrRuns,
+  useDeleteRun,
+  useRunReview,
+} from "@/lib/hooks/reviews";
 import { notify } from "@/lib/toast";
 import type { PrFile, FindingRecord } from "@devdigest/shared";
 import { SmartDiffViewer } from "../SmartDiffViewer";
@@ -17,10 +26,43 @@ interface DiffTabProps {
 }
 
 export function DiffTab({ prId, filesCount, files, canComment }: DiffTabProps) {
+  const qc = useQueryClient();
   const { data: comments } = usePrComments(prId);
   const create = useCreatePrComment(prId);
-  const { data: smartDiff } = useSmartDiff(prId);
-  const { data: reviews } = usePrReviews(prId);
+  const { data: prRuns } = usePrRuns(prId);
+  const running = (prRuns ?? []).some((r) => r.status === "running");
+  const { data: smartDiff } = useSmartDiff(prId, running);
+  const { data: reviews } = usePrReviews(prId, running);
+  const deleteRun = useDeleteRun(prId);
+  const runReview = useRunReview();
+  const [busy, setBusy] = React.useState<null | "clear" | "rerun">(null);
+
+  // Clear = delete every run on this PR → its findings vanish (badges + inline
+  // cards disappear). Re-run = run the most-recent run's agent again; the view
+  // polls while running so the findings reappear live.
+  const clearFindings = async () => {
+    if (!prId || !prRuns?.length) return;
+    setBusy("clear");
+    try {
+      for (const r of prRuns) await deleteRun.mutateAsync(r.run_id);
+      qc.invalidateQueries({ queryKey: ["pull", prId, "smart-diff"] });
+    } finally {
+      setBusy(null);
+    }
+  };
+  const rerunReview = async () => {
+    if (!prId) return;
+    const agentId = prRuns?.[0]?.agent_id ?? undefined;
+    setBusy("rerun");
+    try {
+      await runReview.mutateAsync({ prId, ...(agentId ? { agentId } : { all: true }) });
+      qc.invalidateQueries({ queryKey: ["pr-runs", prId] });
+    } catch (e) {
+      notify.error(e instanceof Error ? e.message : "Couldn't start the review.");
+    } finally {
+      setBusy(null);
+    }
+  };
   // Findings from the last review, grouped by file path → rendered inline on the
   // flagged diff line in Smart order (severity + title + rationale + fix).
   const findingsByPath = React.useMemo(() => {
@@ -84,6 +126,30 @@ export function DiffTab({ prId, filesCount, files, canComment }: DiffTabProps) {
                   </button>
                 ))}
               </div>
+            )}
+            {smartDiff && (
+              <>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  icon="RefreshCw"
+                  loading={busy === "rerun" || running}
+                  disabled={!!busy || running}
+                  onClick={rerunReview}
+                >
+                  {running ? "Running…" : "Re-run review"}
+                </Button>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  icon="Trash"
+                  loading={busy === "clear"}
+                  disabled={!!busy || !prRuns?.length}
+                  onClick={clearFindings}
+                >
+                  Clear findings
+                </Button>
+              </>
             )}
             {commentCount > 0 && (
               <Button

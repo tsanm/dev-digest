@@ -7,11 +7,15 @@ const SMART_DIFF: SmartDiff = {
   split_suggestion: { too_big: false, total_lines: 1, proposed_splits: [] },
 };
 
+vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQueries: vi.fn() }) }));
 vi.mock("@/lib/hooks/reviews", () => ({
   usePrComments: () => ({ data: [] }),
   useCreatePrComment: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSmartDiff: () => ({ data: SMART_DIFF }),
   usePrReviews: () => ({ data: [] }),
+  usePrRuns: () => ({ data: [] }),
+  useDeleteRun: () => ({ mutateAsync: vi.fn() }),
+  useRunReview: () => ({ mutateAsync: vi.fn() }),
 }));
 vi.mock("@/lib/toast", () => ({ notify: { error: vi.fn() } }));
 vi.mock("@/components/diff-viewer", () => ({ DiffViewer: () => <div data-testid="diff-viewer" /> }));

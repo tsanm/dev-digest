@@ -49,20 +49,23 @@ export function usePrRuns(prId: string | null | undefined) {
 }
 
 // ---- Smart Diff (L03): risk-ordered layout + finding overlay (no LLM) ----
-export function useSmartDiff(prId: string | null | undefined) {
+// `pollWhileRunning` refetches every 3s so a re-run's finding badges appear live.
+export function useSmartDiff(prId: string | null | undefined, pollWhileRunning = false) {
   return useQuery({
     queryKey: ["pull", prId, "smart-diff"],
     queryFn: () => api.get<SmartDiff>(`/pulls/${prId}/smart-diff`),
     enabled: !!prId,
+    refetchInterval: pollWhileRunning ? 3000 : false,
   });
 }
 
 // ---- Persisted reviews + findings for a PR ----
-export function usePrReviews(prId: string | null | undefined) {
+export function usePrReviews(prId: string | null | undefined, pollWhileRunning = false) {
   return useQuery({
     queryKey: ["reviews", prId],
     queryFn: () => api.get<ReviewRecord[]>(`/pulls/${prId}/reviews`),
     enabled: !!prId,
+    refetchInterval: pollWhileRunning ? 3000 : false,
   });
 }
 

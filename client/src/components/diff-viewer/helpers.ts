@@ -36,3 +36,18 @@ export function parsePatch(patch: string | null | undefined): Line[] {
   }
   return out;
 }
+
+/** Stable DOM id for a rendered diff line (Smart Diff click-to-line anchor). */
+export function diffLineAnchorId(path: string, line: number): string {
+  return `dl-${path}-${line}`;
+}
+
+/** Scroll a diff line into view + brief flash (used by the "N findings" badge). */
+export function scrollToDiffLine(path: string, line: number): void {
+  if (typeof document === "undefined") return;
+  const el = document.getElementById(diffLineAnchorId(path, line));
+  if (!el) return;
+  el.scrollIntoView({ block: "center", behavior: "smooth" });
+  el.setAttribute("data-diff-line-flash", "1");
+  setTimeout(() => el.removeAttribute("data-diff-line-flash"), 1200);
+}

@@ -22,3 +22,18 @@
     transform: translateY(0);
   }
 }
+
+/* Smart Diff: flash a diff line when you click its "N findings" badge. */
+[data-diff-line-flash] {
+  animation: dd-diff-line-flash 1.2s ease-out;
+}
+@keyframes dd-diff-line-flash {
+  0%, 40% {
+    background: var(--crit-bg);
+    box-shadow: inset 3px 0 0 var(--crit);
+  }
+  100% {
+    background: transparent;
+    box-shadow: inset 3px 0 0 transparent;
+  }
+}

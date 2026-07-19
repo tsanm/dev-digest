@@ -8,7 +8,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { Icon, Badge, Button } from "@devdigest/ui";
-import type { SmartDiff, PrFile } from "@devdigest/shared";
+import type { SmartDiff, PrFile, FindingRecord } from "@devdigest/shared";
 import { DiffViewer, type DiffCommentApi } from "../../../../../../../components/diff-viewer";
 import { ROLE_META } from "./constants";
 import { indexByPath, resolveGroupFiles, totalFindingLines } from "./helpers";
@@ -22,11 +22,13 @@ function GroupSection({
   group,
   byPath,
   commenting,
+  findingsByPath,
   defaultOpen,
 }: {
   group: SmartDiffGroup;
   byPath: ByPath;
   commenting?: DiffCommentApi;
+  findingsByPath?: Record<string, FindingRecord[]>;
   defaultOpen: boolean;
 }) {
   const t = useTranslations("prReview");
@@ -76,7 +78,12 @@ function GroupSection({
 
       {open &&
         (groupFiles.length > 0 ? (
-          <DiffViewer files={groupFiles} commenting={commenting} findingLines={findingLines} />
+          <DiffViewer
+            files={groupFiles}
+            commenting={commenting}
+            findingLines={findingLines}
+            findingsByPath={findingsByPath}
+          />
         ) : (
           <div style={s.fileList}>
             {group.files.map((f, i) => (
@@ -104,10 +111,13 @@ export function SmartDiffViewer({
   smartDiff,
   files,
   commenting,
+  findingsByPath,
 }: {
   smartDiff: SmartDiff;
   files: PrFile[];
   commenting?: DiffCommentApi;
+  /** Per-path findings (from the last review) → rendered inline on their line. */
+  findingsByPath?: Record<string, FindingRecord[]>;
 }) {
   const t = useTranslations("prReview");
   const byPath = React.useMemo(() => indexByPath(files), [files]);
@@ -143,6 +153,7 @@ export function SmartDiffViewer({
           group={group}
           byPath={byPath}
           commenting={commenting}
+          findingsByPath={findingsByPath}
           defaultOpen={i === 0}
         />
       ))}

@@ -3,9 +3,9 @@
 import React from "react";
 import { SectionLabel, Button } from "@devdigest/ui";
 import { DiffViewer, type DiffCommentApi } from "@/components/diff-viewer";
-import { usePrComments, useCreatePrComment, useSmartDiff } from "@/lib/hooks/reviews";
+import { usePrComments, useCreatePrComment, useSmartDiff, usePrReviews } from "@/lib/hooks/reviews";
 import { notify } from "@/lib/toast";
-import type { PrFile } from "@devdigest/shared";
+import type { PrFile, FindingRecord } from "@devdigest/shared";
 import { SmartDiffViewer } from "../SmartDiffViewer";
 
 interface DiffTabProps {
@@ -20,6 +20,16 @@ export function DiffTab({ prId, filesCount, files, canComment }: DiffTabProps) {
   const { data: comments } = usePrComments(prId);
   const create = useCreatePrComment(prId);
   const { data: smartDiff } = useSmartDiff(prId);
+  const { data: reviews } = usePrReviews(prId);
+  // Findings from the last review, grouped by file path → rendered inline on the
+  // flagged diff line in Smart order (severity + title + rationale + fix).
+  const findingsByPath = React.useMemo(() => {
+    const map: Record<string, FindingRecord[]> = {};
+    for (const f of (reviews ?? []).flatMap((r) => r.findings)) {
+      (map[f.file] ??= []).push(f);
+    }
+    return map;
+  }, [reviews]);
   // Smart order (risk-ordered layout) is the default; toggle to the raw file order.
   const [order, setOrder] = React.useState<"smart" | "original">("smart");
   // Comments start hidden so the diff is clean by default — toggle to reveal.
@@ -91,7 +101,12 @@ export function DiffTab({ prId, filesCount, files, canComment }: DiffTabProps) {
         Files changed · {filesCount} files
       </SectionLabel>
       {order === "smart" && smartDiff ? (
-        <SmartDiffViewer smartDiff={smartDiff} files={files} commenting={commenting} />
+        <SmartDiffViewer
+          smartDiff={smartDiff}
+          files={files}
+          commenting={commenting}
+          findingsByPath={findingsByPath}
+        />
       ) : (
         <DiffViewer files={files} commenting={commenting} />
       )}

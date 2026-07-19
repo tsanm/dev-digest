@@ -6,6 +6,7 @@ import React from "react";
 import { useTranslations } from "next-intl";
 import { Icon } from "@devdigest/ui";
 import type { PrFile } from "@/lib/types";
+import type { FindingRecord } from "@devdigest/shared";
 import { AUTO_EXPAND_MAX_LINES } from "../constants";
 import { parsePatch, type Line, scrollToDiffLine } from "../helpers";
 import {
@@ -34,11 +35,14 @@ export function FileCard({
   file,
   commenting,
   findingLines,
+  findings,
 }: {
   file: PrFile;
   commenting?: DiffCommentApi;
   /** Smart Diff: line numbers the last review flagged → clickable "N findings" badge. */
   findingLines?: number[];
+  /** Smart Diff: the findings on this file → rendered inline on their start line. */
+  findings?: FindingRecord[];
 }) {
   const t = useTranslations("shell");
   const [open, setOpen] = React.useState(
@@ -122,6 +126,9 @@ export function FileCard({
                 path={file.path}
                 threads={threadsForLine(ln, matched)}
                 commenting={commenting}
+                findings={
+                  ln.newNo != null ? findings?.filter((f) => f.start_line === ln.newNo) : undefined
+                }
               />
             ))
           )}

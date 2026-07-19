@@ -50,4 +50,23 @@ describe("FileCard — Smart Diff finding badge (V.P0.3)", () => {
     renderCard(<FileCard file={FILE} />);
     expect(screen.queryByRole("button", { name: /findings/i })).not.toBeInTheDocument();
   });
+
+  it("renders the finding detail inline on its start line (severity + title + rationale + fix)", () => {
+    const finding = {
+      id: "f1",
+      severity: "CRITICAL",
+      category: "security",
+      title: "Missing auth check",
+      file: "src/a.ts",
+      start_line: 5,
+      end_line: 5,
+      rationale: "The charge runs without verifying the user.",
+      suggestion: "Verify the session before charging.",
+      confidence: 0.9,
+    } as unknown as import("@devdigest/shared").FindingRecord;
+    renderCard(<FileCard file={FILE} findingLines={[5]} findings={[finding]} />);
+    expect(screen.getByText("Missing auth check")).toBeInTheDocument();
+    expect(screen.getByText(/runs without verifying the user/)).toBeInTheDocument();
+    expect(screen.getByText(/Verify the session before charging/)).toBeInTheDocument();
+  });
 });
